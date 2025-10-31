@@ -1,0 +1,17 @@
+import mongoose from "mongoose";
+import { DB_URI,NODE_ENV } from "../config/env";
+
+if(!DB_URI){
+    throw new error ("please define MONGODB_URI");  
+}
+ const connectToDatabase=async()=>{
+        try{
+            await mongoose.connect(DB_URI)
+            console.log(`connected to db in ${NODE_ENV} mode`);
+        }
+        catch(error){
+            console.log("error connecting to db:",error);
+            process.exit(1);
+        }
+    }
+    export default connectToDatabase;
