@@ -5,12 +5,21 @@ import travelerRouter from "./routes/traveler.route.js";
 import organizerRouter from "./routes/organizer.route.js";
 import adminRouter from "./routes/admin.route.js";
 import connectToDatabase from "./database/mongodb.js";
+import errormiddleware from "./middlewares/error.middleware.js";
+import verificationRouter from "./routes/verification.route.js";
 
 const app = express();
+
+app.use(express.json());
+
 app.use("/api/auth",authRouter);
 app.use("/api/traveler",travelerRouter);
 app.use("/api/organizer",organizerRouter);
 app.use("/api/admin",adminRouter);
+app.use("/api/verify",verificationRouter)
+
+app.use(errormiddleware);
+
 
 app.listen(PORT,async()=>{
     console.log(`RoamTogether API is running on http://localhost:${PORT}`);

@@ -1,8 +1,9 @@
 import {Router} from "express";
+import { viewTrips } from "../controller/traveler.controller.js";
 
 const travelerRouter = Router();
 
-travelerRouter.get("/trips",(req,res)=>res.send({title:"trips details"}));
+travelerRouter.get("/trips",viewTrips);
 travelerRouter.get("/:id",(req,res)=>res.send({title:"one trip detail"}));
 travelerRouter.post("/mytrip",(req,res)=>res.send({title:"my trip"}));
 travelerRouter.get("/participants",(req,res)=>res.send({title:"view participants"}));

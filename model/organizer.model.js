@@ -1,4 +1,13 @@
 import mongoose from "mongoose";
+const planDetailSchema = new mongoose.Schema(
+  {
+    day: { type: Number },
+    title: { type: String },
+    plan: { type: String },
+  },
+  { _id: false } // prevents creating extra _id for each plan item
+);
+
 const organizerSchema = new mongoose.Schema({
     title:{
       type:String,
@@ -46,10 +55,11 @@ const organizerSchema = new mongoose.Schema({
             default:false
         }
     },
-    photo:{
-        type:String,
+    
+    tripPhoto:[{
+         type:String,
         required:[true,"photo is required"]
-    },
+    }],
     price:{
         type:Number,
         required:[true,"price is required"]
@@ -61,7 +71,11 @@ const organizerSchema = new mongoose.Schema({
     exclusionspoint:[{
         type:String,
         required:[true,"exclusionspoint is required"]
-    }]
+    }],
+      //  Day-wise plan details
+  planDetails:[planDetailSchema],
+
+   
 
 },{timestamps:true});
 const organizer= mongoose.model("organizer",organizerSchema);
