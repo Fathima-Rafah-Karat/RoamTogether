@@ -5,7 +5,7 @@ import mongoose from "mongoose";
         required:[true,"name is required"],
         trim:true,
         minlength:3,
-        maxlenth:30
+        maxlength:30
     },
     email:{
         type:String,
@@ -13,12 +13,12 @@ import mongoose from "mongoose";
         trim:true,
         lowercase:true,
         match:[/^\S+@\S+\.\S+$/,"please fill valid email"],
-        unqiue:true
+        unique:true
     },
     phone:{
         type:String,
         required:[true,"phone number is required"],
-        unqiue:true,
+        unique:true,
         match:[/^\+?[1-9]\d{1,14}$/,"please fill the valid phone_number"]
     },
     photo:{
@@ -28,7 +28,15 @@ import mongoose from "mongoose";
     aadharcard:{
       type:String,
       required:[true,"aadhar card  photo is required"]
-    }
+    },
+     tripsJoined: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "organizer", 
+      },
+    ],
  },{timestamps:true});
  const Traveler = mongoose.model("traveler",travelerSchema);
  export default Traveler;
+
+

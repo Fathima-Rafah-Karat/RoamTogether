@@ -1,0 +1,19 @@
+ import mongoose from "mongoose";
+ 
+ const diarySchema = new mongoose.Schema({
+    title:{
+        type:String,
+        required:[true,"title is required"]
+    },
+    date:{
+        type:Date,
+        required:[true,"date is required"]
+    },
+    yourstory:{
+        type:String,
+        required:[true,"yourstory is required"],
+        minlength:25
+    }
+ },{timestamps:true});
+ const Diary=mongoose.model("dairy",diarySchema);
+ export default Diary;

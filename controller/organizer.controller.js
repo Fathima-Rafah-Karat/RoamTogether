@@ -1,3 +1,4 @@
+import notification from "../model/notification.model.js";
 import organizer from "../model/organizer.model.js";
 
 
@@ -19,7 +20,7 @@ export const createTrip = async (req,res,next)=>{
       }
     }
          
-       
+
         const trip=await organizer.create({ title,description,location,startDate,endDate,participants,inclusions,tripPhoto,price,inclusionspoint,exclusionspoint,planDetails:parsedPlanDetails});
         res.status(200).json({
             success:true,
@@ -116,3 +117,18 @@ export  const  viewtrips = async(req,res,next)=>{
         next(error);
     }
 }
+
+export const createnotification = async(req,res,next)=>{
+    try{
+      const{travelerId,type,message,isRead}=req.body;
+      const createnotify=await notification.create({travelerId,type,message,isRead});
+      res.status(200).json({
+        success:true,
+        data:createnotify
+      })
+    }
+    catch(error){
+        next(error);
+    }
+}
+

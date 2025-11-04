@@ -1,19 +1,21 @@
 import {Router} from "express";
-import { viewTrips } from "../controller/traveler.controller.js";
+import { viewTrips,tripdetail,register,creatediary,viewdiary,viewall,createblog,viewallblog,reviewandrating ,viewratereview,viewnotify,mytrip,countparticipants} from "../controller/traveler.controller.js";
+import upload from "../middlewares/multer.middleware.js";
 
 const travelerRouter = Router();
 
 travelerRouter.get("/trips",viewTrips);
-travelerRouter.get("/:id",(req,res)=>res.send({title:"one trip detail"}));
-travelerRouter.post("/mytrip",(req,res)=>res.send({title:"my trip"}));
-travelerRouter.get("/participants",(req,res)=>res.send({title:"view participants"}));
-travelerRouter.delete("/canceltrip",(req,res)=>res.send({title:"cancel the trip"}));
-travelerRouter.post("/register",(req,res)=>res.send({title:"register the trip"}));
-travelerRouter.post("/diary",(req,res)=>res.send({title:" create travel diary"}));
-travelerRouter.get("/diary",(req,res)=>res.send({title:"travel dairy"}));
-travelerRouter.post("/review&rating",(req,res)=>res.send({title:"create review & rating"}));
-travelerRouter.get("/notification",(req,res)=>res.send({title:"view notification"}));
-travelerRouter.post("/blog",(req,res)=>res.send({title:"create the blog"}));
-travelerRouter.get("/blog",(req,res)=>res.send({title:"view the blog"}));
+travelerRouter.get("/:id",tripdetail);
+travelerRouter.post("/register",  upload.fields([{ name: "photo", maxCount: 1 }, { name: "aadharcard", maxCount: 1 },]),register);
+travelerRouter.get("/mytrip/view",mytrip);
+travelerRouter.get("/participants/:id",countparticipants);
+travelerRouter.post("/diary",creatediary);
+travelerRouter.get("/diary/diaries",viewall);
+travelerRouter.get("/diary/:id",viewdiary);
+travelerRouter.post("/review&rating",reviewandrating);
+travelerRouter.get("/review&rating/rateandreview",viewratereview)
+travelerRouter.get("/notification/notify",viewnotify);
+travelerRouter.post("/blog",createblog);
+travelerRouter.get("/blog/view",viewallblog);
 
 export default travelerRouter;
