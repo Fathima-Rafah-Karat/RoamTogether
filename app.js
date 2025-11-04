@@ -7,6 +7,7 @@ import adminRouter from "./routes/admin.route.js";
 import connectToDatabase from "./database/mongodb.js";
 import errormiddleware from "./middlewares/error.middleware.js";
 import verificationRouter from "./routes/verification.route.js";
+import cors from "cors";
 
 const app = express();
 
@@ -19,7 +20,8 @@ app.use("/api/admin",adminRouter);
 app.use("/api/verify",verificationRouter)
 
 app.use(errormiddleware);
-
+app.use("/uploads", express.static("uploads"));
+app.use(cors());
 
 app.listen(PORT,async()=>{
     console.log(`RoamTogether API is running on http://localhost:${PORT}`);
