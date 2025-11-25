@@ -56,47 +56,54 @@ export const signUp = async (req, res, next) => {
 
 export const signIn = async (req, res, next) => {
   try {
-    // identifier  -can be username or email   - in postman give identifierand password if the identifier is email or username
-    const { identifier, password } = req.body;
-    if (!identifier || !password) {
-       return res.status(400).json({
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
         success: false,
-        message: "Please provide username/email and password",
+        message: "Please provide email and password",
       });
     }
-    // Find user by email or username
-    const user = await Auth.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
-    })
-    // if the user is not existing
+
+    // Find user by email
+    const user = await Auth.findOne({ email });
+
     if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
       });
     }
-    const ispasswordvalid = await bcrypt.compare(password, user.password);
-    // if the password is not validate
-    if (!ispasswordvalid) {
-      const error = new Error("invalid password");
-      error.statusCode = 401;
-      throw error;
+
+    // Compare password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid password",
+      });
     }
-    // if the password is validate generate new token
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+
+    // Generate JWT token
+    const token = jwt.sign({ userId: user._id }, JWT_SECRET, {
+      expiresIn: JWT_EXPIRES_IN,
+    });
+
     res.status(200).json({
       success: true,
-      message: "user singned in successfully",
+      message: "User signed in successfully",
       data: {
         token,
         user,
-      }
-    })
-  }
-  catch (error) {
+      },
+    });
+  } catch (error) {
     next(error);
   }
-}
+};
+
 
 export const signOut = async (req, res, next) => {
   res.status(200).json({
@@ -105,3 +112,15 @@ export const signOut = async (req, res, next) => {
   })
 
 }
+export const signout = async (req, res, next) => {
+  try {
+    const users = await Auth.find({}, "username role"); // select only username and role
+
+    res.status(200).json({
+      success: true,
+      data: users, // array of objects { username, role }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

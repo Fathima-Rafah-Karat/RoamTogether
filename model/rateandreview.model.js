@@ -6,6 +6,11 @@ const reviewansrateSchema = new mongoose.Schema({
         ref: "Trip",
         required: true
     },
+     TravelerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "traveler", 
+      required: true,
+    },
     rating: { 
         type: Number, 
         required: true,

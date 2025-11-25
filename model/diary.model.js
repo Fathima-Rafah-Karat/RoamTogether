@@ -1,6 +1,7 @@
  import mongoose from "mongoose";
  
  const diarySchema = new mongoose.Schema({
+    
     title:{
         type:String,
         required:[true,"title is required"]
@@ -15,5 +16,5 @@
         minlength:25
     }
  },{timestamps:true});
- const Diary=mongoose.model("dairy",diarySchema);
+ const Diary=mongoose.model("diary",diarySchema);
  export default Diary;

@@ -11,6 +11,10 @@ const blogSchema = new mongoose.Schema({
     type: String,
     required: [true, "Blog story is required"],
     minlength: 50,
+  },
+  photo:{
+    type:String,
+    required:[true,"photo is required"]
   }
  
 },{timestamps:true});

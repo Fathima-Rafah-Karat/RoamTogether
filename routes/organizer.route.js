@@ -1,9 +1,10 @@
 import { Router } from "express";
-import {createTrip,updatetrip,deletetrip,viewtrip,viewtrips,createnotification} from "../controller/organizer.controller.js";
+import {createTrip,updatetrip,deletetrip,viewtrip,viewtrips,createnotification,counttrip} from "../controller/organizer.controller.js";
 import upload from "../middlewares/multer.middleware.js";
 
 const organizerRouter =Router();
 
+organizerRouter.get("/count",counttrip)
 organizerRouter.post("/createtrip",  upload.array("tripPhoto", 5),createTrip);
 organizerRouter.put("/:id",upload.array("tripPhoto", 5),updatetrip);
 organizerRouter.delete("/:id",deletetrip);

@@ -132,3 +132,15 @@ export const createnotification = async(req,res,next)=>{
     }
 }
 
+export const counttrip = async(req,res,next)=>{
+   try{
+   const counts=await organizer.countDocuments();
+   res.status(200).json({
+    success:true,
+    data:counts
+   })
+  }
+  catch(error){
+    next(error);
+  }
+}

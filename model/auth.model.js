@@ -13,13 +13,13 @@ const authSchema=new mongoose.Schema({
         required:[true,"email is required "],
         trim:true,
         lowercase:true,
-        unqiue:true,
+       unique:true,
         match:[/^\S+@\S+\.\S+$/,"please fill valid email"]
     },
     phone:{
         type:String,
         required:[true,"phone number is required"],
-        unqiue:true,
+        unique:true,
         match:[/^\+?[1-9]\d{1,14}$/,"please fill the valid phone_number"]
     },
     password:{
