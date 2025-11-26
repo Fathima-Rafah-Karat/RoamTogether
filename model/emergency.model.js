@@ -16,7 +16,9 @@
         type:String,
         required:[true,"relationship is required"],
         
-    }
+    },
+         traveler: { type: mongoose.Schema.Types.ObjectId, ref: "Traveler", required: true }
+   
  },{timestamps:true});
  const Emergency=mongoose.model("emergencycontact",emergencySchema);
  export default Emergency;

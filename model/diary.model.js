@@ -14,7 +14,9 @@
         type:String,
         required:[true,"yourstory is required"],
         minlength:25
-    }
+    },
+      traveler: { type: mongoose.Schema.Types.ObjectId, ref: "Traveler", required: true }
+
  },{timestamps:true});
  const Diary=mongoose.model("diary",diarySchema);
  export default Diary;

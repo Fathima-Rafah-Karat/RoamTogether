@@ -118,19 +118,33 @@ export  const  viewtrips = async(req,res,next)=>{
     }
 }
 
-export const createnotification = async(req,res,next)=>{
-    try{
-      const{travelerId,type,message,isRead}=req.body;
-      const createnotify=await notification.create({travelerId,type,message,isRead});
-      res.status(200).json({
-        success:true,
-        data:createnotify
-      })
+export const createnotification = async (req, res, next) => {
+  try {
+    const { travelerId, type, message } = req.body;
+
+    if (!travelerId || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "travelerId and message are required",
+      });
     }
-    catch(error){
-        next(error);
-    }
-}
+
+    const notify = await notification.create({
+      travelerId,
+      type,
+      message,
+      isRead: false
+    });
+
+    res.status(200).json({
+      success: true,
+      data: notify
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const counttrip = async(req,res,next)=>{
    try{
