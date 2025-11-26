@@ -28,7 +28,13 @@ import mongoose from "mongoose";
     aadharcard:{
       type:String,
       required:[true,"aadhar card  photo is required"]
-    },
+    }, 
+     authId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "auth",
+    required: true
+  },
+    
      tripsJoined: [
       {
         type: mongoose.Schema.Types.ObjectId,

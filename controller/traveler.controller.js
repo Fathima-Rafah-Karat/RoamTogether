@@ -31,38 +31,56 @@ export const tripdetail = async (req,res,next) =>{
     }
 }
 
-export const register = async (req, res, next) => {
+export const register = async (req, res) => {
   try {
+    // 1️⃣ Check if user is authenticated
+    if (!req.user) {
+      return res
+        .status(401)
+        .json({ success: false, error: "Unauthorized. Please login." });
+    }
+
     const { name, phone, email, tripId } = req.body;
 
-    const photo = req.files?.photo ? req.files.photo[0].path : null;
-    const aadharcard = req.files?.aadharcard ? req.files.aadharcard[0].path : null;
+    // 2️⃣ Check if trip exists
+    const trip = await organizer.findById(tripId);
+    if (!trip) {
+      return res
+        .status(404)
+        .json({ success: false, error: "Trip not found" });
+    }
 
+    // 3️⃣ Check participant limit
+    const currentCount = await Traveler.countDocuments({
+      tripsJoined: tripId,
+    });
+    if (currentCount >= trip.participants) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Registration full" });
+    }
+
+    // 4️⃣ Handle file uploads (Multer required)
+    const photo = req.files?.photo?.[0]?.path || null;
+    const aadharcard = req.files?.aadharcard?.[0]?.path || null;
+
+    // 5️⃣ Create traveler
     const traveler = await Traveler.create({
+      authId: req.user._id,
       name,
       phone,
       email,
       photo,
       aadharcard,
-      tripsJoined: tripId ? [tripId] : [],
+      tripsJoined: [tripId],
     });
 
-    res.status(200).json({
-      success: true,
-      message: "Traveler registered successfully",
-      data: traveler,
-    });
-
+    return res.status(201).json({ success: true, traveler });
   } catch (error) {
-    console.error("Register traveler error:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    console.error("Registration error:", error);
+    return res.status(500).json({ success: false, error: "Server error" });
   }
 };
-
-
 
 // Create diary
 export const creatediary = async (req, res, next) => {
@@ -224,33 +242,127 @@ export const viewnotify = async (req, res, next) => {
   }
 };
 
-export const mytrip = async (req, res ,next) => {
+// View one notification
+export const viewonenotify = async (req, res, next) => {
   try {
-    const { email } = req.query;
+    const travelerId = req.user._id; // logged-in user
+    const notifyId = req.params.id;  // notification id from URL
 
-    const traveler = await Traveler.findOne({ email }).populate("tripsJoined");
+    // Find notification
+    const notify = await notification.findById(notifyId);
 
-    if (!traveler) {
-      return res.status(404).json({ success: false, message: "Traveler not found" });
+    // If not found
+    if (!notify) {
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+    }
+
+    // Check if notification belongs to logged-in traveler
+    if (notify.travelerId.toString() !== travelerId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to view this notification",
+      });
     }
 
     res.status(200).json({
       success: true,
-      count: traveler.tripsJoined.length,
-      data: traveler.tripsJoined,
+      data: notify,
     });
+
   } catch (error) {
-   next(error);
+    next(error);
+  }
+};
+  
+
+// Mark a notification as read
+export const marknotification = async (req, res, next) => {
+  try {
+    const travelerId = req.user._id; // logged-in user
+    const notifyId = req.params.id;  // notification ID from URL
+
+    // Find notification
+    const notify = await notification.findById(notifyId);
+
+    if (!notify) {
+      return res.status(404).json({
+        success: false,
+        message: "Notification not found",
+      });
+    }
+
+    // Ensure the notification belongs to the logged-in user
+    if (notify.travelerId.toString() !== travelerId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to mark this notification",
+      });
+    }
+
+    // Update isRead to true if not already
+    if (!notify.isRead) {
+      notify.isRead = true;
+      await notify.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Notification marked as read",
+      data: notify,
+    });
+
+  } catch (error) {
+    next(error);
   }
 };
 
-export const countparticipants = async (req, res, next) => {
-  try {
-    const { tripId } = req.params;
 
-    // Fetch all travelers who joined this trip
-    const participants = await Traveler.find({ tripsJoined: tripId })
-      .select("name "); // Select only safe fields
+export const mytrip = async (req, res) => {
+  try {
+    // Find the traveler for the logged-in user
+    const traveler = await Traveler.findOne({ authId: req.user._id }).populate({
+      path: "tripsJoined",
+      select: "title location startDate endDate image participants", // select only needed fields
+    });
+
+    if (!traveler) {
+      return res.status(404).json({
+        success: false,
+        message: "Traveler not found",
+      });
+    }
+
+    // Current date
+    const now = new Date();
+
+    // Only trips the user joined
+    const upcoming = traveler.tripsJoined.filter((trip) => new Date(trip.startDate) >= now);
+    const past = traveler.tripsJoined.filter((trip) => new Date(trip.endDate) < now);
+
+    res.status(200).json({
+      success: true,
+      upcoming,
+      past,
+    });
+  } catch (error) {
+    console.log("MYTRIP ERROR:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+};
+
+
+export const countparticipants = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const participants = await Traveler.find({ tripsJoined: id })
+      .select("name email photo");
 
     res.status(200).json({
       success: true,
@@ -259,7 +371,7 @@ export const countparticipants = async (req, res, next) => {
     });
 
   } catch (error) {
-    next(error);
+    res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -385,3 +497,5 @@ export const searchtrip = async (req, res, next) => {
     next(error);
   }
 };
+
+
