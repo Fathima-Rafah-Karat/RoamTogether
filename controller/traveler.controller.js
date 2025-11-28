@@ -30,59 +30,105 @@ export const tripdetail = async (req,res,next) =>{
         next(error);
     }
 }
-
 export const register = async (req, res) => {
   try {
-    // 1️⃣ Check if user is authenticated
     if (!req.user) {
-      return res
-        .status(401)
-        .json({ success: false, error: "Unauthorized. Please login." });
+      return res.status(401).json({ success: false, error: "Unauthorized. Please login." });
     }
 
     const { name, phone, email, tripId } = req.body;
 
-    // 2️⃣ Check if trip exists
     const trip = await organizer.findById(tripId);
-    if (!trip) {
-      return res
-        .status(404)
-        .json({ success: false, error: "Trip not found" });
+    if (!trip) return res.status(404).json({ success: false, error: "Trip not found" });
+
+    const now = new Date();
+    if (new Date(trip.startDate) < now) {
+      return res.status(400).json({
+        success: false,
+        error: "Cannot register. Trip already started.",
+      });
     }
 
-    // 3️⃣ Check participant limit
-    const currentCount = await Traveler.countDocuments({
-      tripsJoined: tripId,
-    });
-    if (currentCount >= trip.participants) {
-      return res
-        .status(400)
-        .json({ success: false, error: "Registration full" });
+    
+    let traveler = await Traveler.findOne({ authId: req.user._id });
+
+    
+    if (!traveler) {
+      const photo = req.files?.photo?.[0]?.path || null;
+      const aadharcard = req.files?.aadharcard?.[0]?.path || null;
+
+      traveler = await Traveler.create({
+        authId: req.user._id,
+        name,
+        phone,
+        email,
+        photo,
+        aadharcard,
+        tripsJoined: [tripId],
+      });
+    } else {
+      
+      if (!traveler.tripsJoined.includes(tripId)) {
+        traveler.tripsJoined.push(tripId);
+        await traveler.save();
+      }
     }
-
-    // 4️⃣ Handle file uploads (Multer required)
-    const photo = req.files?.photo?.[0]?.path || null;
-    const aadharcard = req.files?.aadharcard?.[0]?.path || null;
-
-    // 5️⃣ Create traveler
-    const traveler = await Traveler.create({
-      authId: req.user._id,
-      name,
-      phone,
-      email,
-      photo,
-      aadharcard,
-      tripsJoined: [tripId],
-    });
 
     return res.status(201).json({ success: true, traveler });
+
   } catch (error) {
     console.error("Registration error:", error);
     return res.status(500).json({ success: false, error: "Server error" });
   }
 };
 
-// Create diary
+export const deleteRegisteredTrip = async (req, res) => {
+  try {
+    const travelerId = req.user._id;
+    const { tripId } = req.params;
+
+    if (!tripId) {
+      return res.status(400).json({ success: false, message: "Trip ID is required" });
+    }
+
+    const traveler = await Traveler.findOne({ authId: travelerId });
+    if (!traveler) {
+      return res.status(404).json({ success: false, message: "Traveler not found" });
+    }
+
+    const joinedIndex = traveler.tripsJoined.findIndex(t => t.toString() === tripId);
+    if (joinedIndex === -1) {
+      return res.status(404).json({ success: false, message: "Trip not found in traveler's joined trips" });
+    }
+
+    traveler.tripsJoined.splice(joinedIndex, 1);
+    await traveler.save();
+
+    
+    const trip = await organizer.findById(tripId);
+    if (trip) {
+      if (typeof trip.participants === "number") {
+        trip.participants = Math.max(0, trip.participants - 1);
+      }
+      await trip.save();
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Trip unregistered successfully",
+    });
+  } catch (err) {
+    console.error("Error in deleteRegisteredTrip:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: err.message,
+    });
+  }
+};
+
+
+
 export const creatediary = async (req, res, next) => {
   try {
     const { title, date, yourstory } = req.body;
@@ -91,7 +137,7 @@ export const creatediary = async (req, res, next) => {
       date,
       yourstory,
       traveler: req.user._id
- // associate diary with logged-in traveler
+ 
     });
     res.status(200).json({ success: true, data: diary });
   } catch (error) {
@@ -99,7 +145,6 @@ export const creatediary = async (req, res, next) => {
   }
 };
 
-// View single diary (only if belongs to logged-in traveler)
 export const viewdiary = async (req, res, next) => {
   try {
     const diary = await Diary.findOne({ _id: req.params.id, traveler: req.traveler._id });
@@ -112,7 +157,6 @@ export const viewdiary = async (req, res, next) => {
   }
 };
 
-// View all diaries of logged-in traveler
 export const viewall = async (req, res, next) => {
   try {
     const diaries = await Diary.find({ traveler: req.user._id });
@@ -122,7 +166,6 @@ export const viewall = async (req, res, next) => {
   }
 };
 
-// Delete diary (only if belongs to traveler)
 export const deletediary = async (req, res, next) => {
   try {
     const diary = await Diary.findOneAndDelete({ _id: req.params.id, traveler: req.traveler._id });
@@ -135,7 +178,6 @@ export const deletediary = async (req, res, next) => {
   }
 };
 
-// Edit diary (only if belongs to traveler)
 export const editdiary = async (req, res, next) => {
   try {
     const diary = await Diary.findOneAndUpdate(
@@ -184,18 +226,26 @@ export const viewallblog = async(req,res,next)=>{
 
 export const reviewandrating = async (req, res, next) => {
   try {
-    const { tripId, rating, review, TravelerId } = req.body;
+    const { tripId, rating, review } = req.body;
 
-    if (!tripId || !rating || !review || !TravelerId) {
+    if (!tripId || !rating || !review) {
       return res.status(400).json({
         success: false,
-        message: "tripId, userId, rating, and review are required.",
+        message: "tripId, rating, and review are required.",
+      });
+    }
+
+    const traveler = await Traveler.findOne({ authId: req.user._id });
+    if (!traveler) {
+      return res.status(404).json({
+        success: false,
+        message: "Traveler not found",
       });
     }
 
     const create = await reviewandrate.create({
       tripId,
-      TravelerId,
+      TravelerId: traveler._id,
       rating,
       review,
     });
@@ -209,6 +259,7 @@ export const reviewandrating = async (req, res, next) => {
     next(error);
   }
 };
+
 
 export const viewratereview = async (req, res, next) => {
   try {
@@ -242,16 +293,13 @@ export const viewnotify = async (req, res, next) => {
   }
 };
 
-// View one notification
 export const viewonenotify = async (req, res, next) => {
   try {
-    const travelerId = req.user._id; // logged-in user
-    const notifyId = req.params.id;  // notification id from URL
+    const travelerId = req.user._id; 
+    const notifyId = req.params.id; 
 
-    // Find notification
     const notify = await notification.findById(notifyId);
 
-    // If not found
     if (!notify) {
       return res.status(404).json({
         success: false,
@@ -259,7 +307,6 @@ export const viewonenotify = async (req, res, next) => {
       });
     }
 
-    // Check if notification belongs to logged-in traveler
     if (notify.travelerId.toString() !== travelerId.toString()) {
       return res.status(403).json({
         success: false,
@@ -278,13 +325,11 @@ export const viewonenotify = async (req, res, next) => {
 };
   
 
-// Mark a notification as read
 export const marknotification = async (req, res, next) => {
   try {
-    const travelerId = req.user._id; // logged-in user
-    const notifyId = req.params.id;  // notification ID from URL
+    const travelerId = req.user._id; 
+    const notifyId = req.params.id; 
 
-    // Find notification
     const notify = await notification.findById(notifyId);
 
     if (!notify) {
@@ -294,7 +339,6 @@ export const marknotification = async (req, res, next) => {
       });
     }
 
-    // Ensure the notification belongs to the logged-in user
     if (notify.travelerId.toString() !== travelerId.toString()) {
       return res.status(403).json({
         success: false,
@@ -302,7 +346,6 @@ export const marknotification = async (req, res, next) => {
       });
     }
 
-    // Update isRead to true if not already
     if (!notify.isRead) {
       notify.isRead = true;
       await notify.save();
@@ -318,43 +361,78 @@ export const marknotification = async (req, res, next) => {
     next(error);
   }
 };
-
-
 export const mytrip = async (req, res) => {
   try {
-    // Find the traveler for the logged-in user
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
     const traveler = await Traveler.findOne({ authId: req.user._id }).populate({
       path: "tripsJoined",
-      select: "title location startDate endDate image participants", // select only needed fields
+      model: "organizer",
+      select: "title location startDate endDate tripPhoto price description participants",
     });
 
     if (!traveler) {
-      return res.status(404).json({
-        success: false,
-        message: "Traveler not found",
+      return res.status(200).json({
+        success: true,
+        upcoming: [],
+        past: [],
       });
     }
 
-    // Current date
     const now = new Date();
+    now.setHours(0, 0, 0, 0);
 
-    // Only trips the user joined
-    const upcoming = traveler.tripsJoined.filter((trip) => new Date(trip.startDate) >= now);
-    const past = traveler.tripsJoined.filter((trip) => new Date(trip.endDate) < now);
+    console.log("\n===== TODAY:", now.toISOString(), "=====\n");
 
-    res.status(200).json({
+    const upcoming = [];
+    const past = [];
+
+    traveler.tripsJoined.forEach((trip) => {
+      const start = new Date(trip.startDate);
+      const end = new Date(trip.endDate);
+
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+
+      console.log("Trip:", trip.title);
+      console.log("Start:", start.toISOString());
+      console.log("End:", end.toISOString());
+
+
+      if (start >= now) {
+        console.log("→ UPCOMING");
+        upcoming.push(trip);
+      } 
+
+      else if (end < now) {
+        console.log("→ PAST");
+        past.push(trip);
+      } 
+      else {
+        console.log("→ ONGOING → UPCOMING");
+        upcoming.push(trip);
+      }
+
+      
+    });
+
+    console.log("FINAL UPCOMING:", upcoming.length);
+    console.log("FINAL PAST:", past.length);
+
+    return res.status(200).json({
       success: true,
       upcoming,
       past,
     });
-  } catch (error) {
-    console.log("MYTRIP ERROR:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+
+  } catch (err) {
+    console.error("Error fetching trips:", err);
+    return res.status(500).json({ success: false, message: "Server Error" });
   }
 };
+
 
 
 export const countparticipants = async (req, res) => {
@@ -391,7 +469,7 @@ export const countTraveler= async (req,res,next)=>{
 
 export const contact = async (req, res, next) => {
   try {
-    const travelerId = req.user._id;  // logged-in traveler
+    const travelerId = req.user._id;  
 
     const { name, phone, relation } = req.body;
 
@@ -415,7 +493,6 @@ export const contact = async (req, res, next) => {
 
 export const viewcontact = async (req, res, next) => {
   try {
-    // Ensure req.user exists
     if (!req.user) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
@@ -465,7 +542,6 @@ export const searchtrip = async (req, res, next) => {
   try {
     const { location } = req.query;
 
-    // If location is missing, return all trips
     if (!location) {
       const trips = await organizer.find();
       return res.status(200).json({
@@ -475,7 +551,6 @@ export const searchtrip = async (req, res, next) => {
       });
     }
 
-    // Search trips where location contains the query (case-insensitive)
     const trips = await organizer.find({
       location: { $regex: location, $options: "i" },
     });
