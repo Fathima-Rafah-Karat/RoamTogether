@@ -13,10 +13,13 @@ const verificationSchema=new mongoose.Schema({
          type:String,
         required:[true,"photo is required"]
     },
-    socailMediaLink:{
-        type:String,
-        required:[true,"socailMediaLink is required"]
-    }
+      status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+         organizer: { type: mongoose.Schema.Types.ObjectId, ref: "Organizer", required: true }
+
 
 },{timestamps:true})
 const verification= mongoose.model("verification",verificationSchema);

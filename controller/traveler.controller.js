@@ -448,7 +448,6 @@ export const mytrip = async (req, res) => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
 
-    console.log("\n===== TODAY:", now.toISOString(), "=====\n");
 
     const upcoming = [];
     const past = [];
@@ -466,16 +465,13 @@ export const mytrip = async (req, res) => {
 
 
       if (start >= now) {
-        console.log("→ UPCOMING");
         upcoming.push(trip);
       } 
 
       else if (end < now) {
-        console.log("→ PAST");
         past.push(trip);
       } 
       else {
-        console.log("→ ONGOING → UPCOMING");
         upcoming.push(trip);
       }
 

@@ -1,10 +1,10 @@
 import { Router } from "express";
-
+import {organizerverification,createverify} from "../controller/admin.controller.js"
 const adminRouter =Router();
 
 adminRouter.get("/count",(req,res)=>res.send({title:"count"}));
-adminRouter.get("/verify",(req,res)=>res.send({title:"organizer verification"}));
-adminRouter.put("/verify",(req,res)=>res.send({title:"create verify"}));
+adminRouter.get("/verify",organizerverification);
+adminRouter.put("/verify/:id",createverify);
 
 
 export default adminRouter;
