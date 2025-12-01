@@ -82,34 +82,96 @@ export const register = async (req, res) => {
   }
 };
 
+export const viewregistered = async (req, res) => {
+  try {
+    // Check if user is authenticated
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        error: "Unauthorized. Please login.",
+      });
+    }
+
+    // Find traveler linked to logged-in user
+    const traveler = await Traveler.findOne({ authId: req.user._id });
+
+    if (!traveler) {
+      return res.status(404).json({
+        success: false,
+        error: "Traveler profile not found for this user.",
+      });
+    }
+
+    // If no registrations
+    if (!traveler.tripsJoined || traveler.tripsJoined.length === 0) {
+      return res.json({ success: true, data: [] });
+    }
+
+    // Fetch all trip details from Organizer collection  
+    const trips = await organizer.find({
+      _id: { $in: traveler.tripsJoined },
+    });
+
+    return res.json({
+      success: true,
+      data: trips,
+    });
+
+  } catch (error) {
+    console.error("Error fetching registered trips:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
+    });
+  }
+};
 export const deleteRegisteredTrip = async (req, res) => {
   try {
-    const travelerId = req.user._id;
+    const userId = req.user._id;  // logged-in user
     const { tripId } = req.params;
 
     if (!tripId) {
-      return res.status(400).json({ success: false, message: "Trip ID is required" });
+      return res.status(400).json({
+        success: false,
+        message: "Trip ID is required",
+      });
     }
 
-    const traveler = await Traveler.findOne({ authId: travelerId });
+    // 1️⃣ Find traveler profile
+    const traveler = await Traveler.findOne({ authId: userId });
     if (!traveler) {
-      return res.status(404).json({ success: false, message: "Traveler not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Traveler not found",
+      });
     }
 
-    const joinedIndex = traveler.tripsJoined.findIndex(t => t.toString() === tripId);
+    // 2️⃣ Check if user has joined this trip
+    const joinedIndex = traveler.tripsJoined.findIndex(
+      (t) => t.toString() === tripId
+    );
+
     if (joinedIndex === -1) {
-      return res.status(404).json({ success: false, message: "Trip not found in traveler's joined trips" });
+      return res.status(404).json({
+        success: false,
+        message: "Trip not found in traveler list",
+      });
     }
 
+    // 3️⃣ Remove trip from traveler list
     traveler.tripsJoined.splice(joinedIndex, 1);
     await traveler.save();
 
-    
+    // 4️⃣ Decrease trip participantCount
     const trip = await organizer.findById(tripId);
+
     if (trip) {
-      if (typeof trip.participants === "number") {
-        trip.participants = Math.max(0, trip.participants - 1);
+      if (typeof trip.participantCount === "number") {
+        trip.participantCount = Math.max(0, trip.participantCount - 1);
+      } else {
+        trip.participantCount = 0; // fallback
       }
+
       await trip.save();
     }
 
@@ -119,6 +181,7 @@ export const deleteRegisteredTrip = async (req, res) => {
     });
   } catch (err) {
     console.error("Error in deleteRegisteredTrip:", err);
+
     return res.status(500).json({
       success: false,
       message: "Internal Server Error",
@@ -126,6 +189,7 @@ export const deleteRegisteredTrip = async (req, res) => {
     });
   }
 };
+
 
 
 
@@ -434,22 +498,34 @@ export const mytrip = async (req, res) => {
 };
 
 
-
 export const countparticipants = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: tripId } = req.params;
 
-    const participants = await Traveler.find({ tripsJoined: id })
+    if (!tripId) {
+      return res.status(400).json({
+        success: false,
+        message: "Trip ID is required",
+      });
+    }
+
+    // Find travelers who joined this trip
+    const participants = await Traveler.find({ tripsJoined: tripId })
       .select("name email photo");
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       count: participants.length,
       data: participants,
     });
 
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error("Error in countparticipants:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Server error",
+      details: error.message,
+    });
   }
 };
 

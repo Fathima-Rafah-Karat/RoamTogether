@@ -72,6 +72,7 @@ const organizerSchema = new mongoose.Schema({
         type:String,
         required:[true,"exclusionspoint is required"]
     }],
+    
       //  Day-wise plan details
   planDetails:[planDetailSchema],
 

@@ -4,7 +4,7 @@ import { viewTrips,tripdetail,register,creatediary,
     viewratereview,viewnotify,mytrip,countparticipants,
     countTraveler,deletediary,editdiary,contact,
      viewcontact,deletecontact,searchtrip,viewonenotify,
-     marknotification,deleteRegisteredTrip} from "../controller/traveler.controller.js";
+     marknotification,deleteRegisteredTrip,viewregistered} from "../controller/traveler.controller.js";
 import upload from "../middlewares/multer.middleware.js";
 import authorize  from "../middlewares/auth.middleware.js"
 const travelerRouter = Router();
@@ -34,6 +34,7 @@ travelerRouter.get("/trips",viewTrips);
 travelerRouter.post("/review&rating",authorize("Traveler"),reviewandrating);
 
 travelerRouter.post("/register",  upload.fields([{ name: "photo", maxCount: 1 }, { name: "aadharcard", maxCount: 1 },]), authorize("Traveler"),register);
+travelerRouter.get ("/registered",authorize("Traveler"),viewregistered)
 
 travelerRouter.get("/participants/:id",countparticipants);
 travelerRouter.get("/review&rating/rateandreview",viewratereview)
