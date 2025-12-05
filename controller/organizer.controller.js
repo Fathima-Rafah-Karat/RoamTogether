@@ -4,6 +4,7 @@ import organizer from "../model/organizer.model.js";
 
 export const createTrip = async (req,res,next)=>{
     try{
+        const organizerId = req.user._id;
       const{title, description,location,startDate, endDate, participants,inclusions, price, inclusionspoint,exclusionspoint,planDetails}=req.body;
     //   more photo upload to tripphoto
          const tripPhoto = req.files ? req.files.map(file => file.path) : []; 
@@ -21,7 +22,7 @@ export const createTrip = async (req,res,next)=>{
     }
          
 
-        const trip=await organizer.create({ title,description,location,startDate,endDate,participants,inclusions,tripPhoto,price,inclusionspoint,exclusionspoint,planDetails:parsedPlanDetails});
+        const trip=await organizer.create({ organizer: organizerId,title,description,location,startDate,endDate,participants,inclusions,tripPhoto,price,inclusionspoint,exclusionspoint,planDetails:parsedPlanDetails});
         res.status(200).json({
             success:true,
             data:trip
@@ -79,24 +80,25 @@ export const deletetrip =async(req,res,next) =>{
     }
 }
 
-export  const  viewtrip = async(req,res,next)=>{
-    try{
-       const view =await organizer.findById(req.params.id);
-       if(!view){
-        res.status(400).json({
-            success:false,
-            message:"user not found"
-        })
-       }
-       res.status(200).json({
-        success:true,
-        data:view
-       })
-    }
-    catch(error){
-        next(error);
-    }
-}
+export const viewtrip = async (req, res) => {
+  try {
+    const organizerId = req.user._id;
+
+    const trips = await organizer.find({ organizer: organizerId });
+
+    return res.status(200).json({
+      success: true,
+      data: trips,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
+  }
+};
+
 
 
 export  const  viewtrips = async(req,res,next)=>{

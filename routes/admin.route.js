@@ -3,7 +3,7 @@ import {organizerverification,createverify} from "../controller/admin.controller
 const adminRouter =Router();
 
 adminRouter.get("/count",(req,res)=>res.send({title:"count"}));
-adminRouter.get("/verify",organizerverification);
+adminRouter.get("/viewverify",organizerverification);
 adminRouter.put("/verify/:id",createverify);
 
 

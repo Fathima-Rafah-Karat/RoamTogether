@@ -75,7 +75,11 @@ const organizerSchema = new mongoose.Schema({
     
       //  Day-wise plan details
   planDetails:[planDetailSchema],
-
+    organizer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true, // ⭐ VERY IMPORTANT
+    },
    
 
 },{timestamps:true});
