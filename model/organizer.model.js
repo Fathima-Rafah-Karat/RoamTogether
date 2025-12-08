@@ -5,7 +5,7 @@ const planDetailSchema = new mongoose.Schema(
     title: { type: String },
     plan: { type: String },
   },
-  { _id: false } // prevents creating extra _id for each plan item
+  { _id: false } 
 );
 
 const organizerSchema = new mongoose.Schema({
@@ -78,7 +78,7 @@ const organizerSchema = new mongoose.Schema({
     organizer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true, // ⭐ VERY IMPORTANT
+      required: true, 
     },
    
 

@@ -1,21 +1,16 @@
 import verification from "../model/verification.model.js";
 
+// ---------------------------------------------------------
+// 📌 POST: Submit or Resubmit Verification
+// ---------------------------------------------------------
 export const Verification = async (req, res) => {
   try {
-    const organizerId = req.user?._id; 
+    const organizerId = req.user?._id;
 
     if (!organizerId) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized: Organizer not found",
-      });
-    }
-        const existing = await verification.findOne({ organizer: organizerId });
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: "You have already submitted verification",
-        status: existing.status,
       });
     }
 
@@ -24,7 +19,6 @@ export const Verification = async (req, res) => {
     const photo = req.files?.photo?.[0]?.path || null;
     const govtIdPhoto = req.files?.govtIdPhoto?.[0]?.path || null;
 
-    // Validate fields
     if (!govtIdType || !photo || !govtIdPhoto) {
       return res.status(400).json({
         success: false,
@@ -32,12 +26,40 @@ export const Verification = async (req, res) => {
       });
     }
 
+    // Check existing verification
+    const existing = await verification.findOne({ organizer: organizerId });
+
+    if (existing) {
+      if (existing.status === "rejected") {
+        // Allow resubmission by updating the existing document
+        existing.photo = photo;
+        existing.govtIdPhoto = govtIdPhoto;
+        existing.govtIdType = govtIdType;
+        existing.status = "pending"; // reset status to pending
+        await existing.save();
+
+        return res.status(200).json({
+          success: true,
+          message: "Verification resubmitted successfully",
+          data: existing,
+        });
+      } else {
+        // Prevent resubmission if pending or approved
+        return res.status(400).json({
+          success: false,
+          message: "You have already submitted verification",
+          status: existing.status,
+        });
+      }
+    }
+
+    // Create new verification
     const verificate = await verification.create({
       organizer: organizerId,
       photo,
       govtIdType,
       govtIdPhoto,
-      status:"pending"
+      status: "pending",
     });
 
     res.status(200).json({
@@ -54,10 +76,12 @@ export const Verification = async (req, res) => {
   }
 };
 
+
 export const viewVerification = async (req, res, next) => {
   try {
-    // Fetch all verifications and include organizer ID
-    const verifications = await verification.find().select("organizer photo govtIdType govtIdPhoto status");
+    const verifications = await verification
+      .find()
+      .select("organizer photo govtIdType govtIdPhoto status");
 
     res.status(200).json({
       success: true,
@@ -68,11 +92,11 @@ export const viewVerification = async (req, res, next) => {
   }
 };
 
+
 export const status = async (req, res) => {
-  const { organizerId } = req.params;
+  const { organizerId } = req.params; 
 
   try {
-    // Find verification by organizerId
     const verifications = await verification.findOne({ organizer: organizerId });
 
     if (!verifications) {
@@ -84,7 +108,7 @@ export const status = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      status: verifications.status,  // approved / rejected / pending
+      status: verifications.status,
       data: verifications,
     });
   } catch (error) {
