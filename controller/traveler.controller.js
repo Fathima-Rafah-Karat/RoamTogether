@@ -81,10 +81,8 @@ export const register = async (req, res) => {
     return res.status(500).json({ success: false, error: "Server error" });
   }
 };
-
 export const viewregistered = async (req, res) => {
   try {
-    // Check if user is authenticated
     if (!req.user) {
       return res.status(401).json({
         success: false,
@@ -92,27 +90,33 @@ export const viewregistered = async (req, res) => {
       });
     }
 
-    // Find traveler linked to logged-in user
+    // Find traveler document by linked auth user
     const traveler = await Traveler.findOne({ authId: req.user._id });
 
+    // If traveler profile does not exist yet → return empty
     if (!traveler) {
-      return res.status(404).json({
-        success: false,
-        error: "Traveler profile not found for this user.",
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "Traveler profile not created yet.",
       });
     }
 
-    // If no registrations
+    // If user hasn't joined any trips
     if (!traveler.tripsJoined || traveler.tripsJoined.length === 0) {
-      return res.json({ success: true, data: [] });
+      return res.status(200).json({
+        success: true,
+        data: [],
+        message: "No registered trips.",
+      });
     }
 
-    // Fetch all trip details from Organizer collection  
+    // Fetch all trips that user joined
     const trips = await organizer.find({
       _id: { $in: traveler.tripsJoined },
     });
 
-    return res.json({
+    return res.status(200).json({
       success: true,
       data: trips,
     });
@@ -125,6 +129,7 @@ export const viewregistered = async (req, res) => {
     });
   }
 };
+
 export const deleteRegisteredTrip = async (req, res) => {
   try {
     const userId = req.user._id;  // logged-in user

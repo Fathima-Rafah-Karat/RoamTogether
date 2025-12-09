@@ -1,6 +1,6 @@
 import notification from "../model/notification.model.js";
 import organizer from "../model/organizer.model.js";
-
+import Emergency from "../model/emergency.model.js";
 
 export const createTrip = async (req,res,next)=>{
     try{
@@ -160,3 +160,31 @@ export const counttrip = async(req,res,next)=>{
     next(error);
   }
 }
+
+
+
+export const viewcontact = async (req, res, next) => {
+  try {
+    // Organizer must pass travelerId in the query
+    const travelerId = req.query.travelerId;
+
+    if (!travelerId) {
+      return res.status(400).json({
+        success: false,
+        message: "Traveler ID is required",
+      });
+    }
+
+    // Get all emergency contacts of this traveler
+    const contacts = await Emergency.find({ traveler: travelerId });
+
+    return res.status(200).json({
+      success: true,
+      count: contacts.length,
+      data: contacts,
+    });
+  } catch (error) {
+    console.error("Error fetching emergency contacts:", error);
+    next(error);
+  }
+};
