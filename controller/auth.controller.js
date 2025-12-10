@@ -105,20 +105,28 @@ export const signIn = async (req, res, next) => {
 };
 
 
-export const signOut = async (req, res, next) => {
-  res.status(200).json({
-    success:true,
-    message:"user signed out successfully"
-  })
 
-}
-export const signout = async (req, res, next) => {
+export const signOut = async (req, res, next) => {
   try {
     const users = await Auth.find({}, "username role"); // select only username and role
 
     res.status(200).json({
       success: true,
       data: users, // array of objects { username, role }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const viewsignup = async (req, res, next) => {
+  try {
+    const users = await Auth.find().select("-password"); // remove hashed password
+
+    res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
     });
   } catch (err) {
     next(err);
