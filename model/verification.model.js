@@ -22,7 +22,7 @@ const verificationSchema = new mongoose.Schema(
     },
     organizer: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Organizer",
+      ref: "auth",
       required: true,
     },
   },

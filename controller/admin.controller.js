@@ -1,11 +1,16 @@
 import Verification from "../model/verification.model.js";
-// Admin: get all organizer verifications
+import Auth from "../model/auth.model.js";
+import organizer from "../model/organizer.model.js";
+import verification from "../model/verification.model.js";
+
 export const organizerverification = async (req, res) => {
   try {
-    // Fetch all verification records from the database
-    const verifications = await Verification.find();
+    const verifications = await Verification.find()
+      .populate({
+        path: "organizer",   // auth user ID stored here
+        select: "username email phone role", 
+      });
 
-    // Send response
     res.status(200).json({
       success: true,
       data: verifications,
@@ -86,6 +91,100 @@ export const status = async (req, res) => {
       success: false,
       message: "Server error",
       error: error.message,
+    });
+  }
+};
+export const count = async (req, res) => {
+  try {
+    // Total Travelers
+    const totalTravelers = await Auth.countDocuments({ role: "Traveler" });
+
+    // Total Verified Organizers
+    const verifiedOrganizers = await Verification.countDocuments({ status: "approved" });
+
+    // Total Trips
+    const totalTrips = await organizer.countDocuments();
+
+    // Pending Verification (Organizers)
+    const pendingVerification = await Verification.countDocuments({ status: "pending" });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalTravelers,
+        verifiedOrganizers,
+        totalTrips,
+        pendingVerification
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+
+export const monthlyGrowth = async (req, res) => {
+  try {
+    const currentYear = new Date().getFullYear();
+
+    let growthData = [];
+
+    for (let month = 0; month < 12; month++) {
+      // Start & end of the month
+      const start = new Date(currentYear, month, 1);
+      const end = new Date(currentYear, month + 1, 1);
+
+      // Count registered travelers per month
+      const users = await Auth.countDocuments({
+        role: "Traveler",
+        createdAt: { $gte: start, $lt: end }
+      });
+
+      // Count trips created per month
+      const trips = await organizer.countDocuments({
+        createdAt: { $gte: start, $lt: end }
+      });
+
+      growthData.push({
+        month: start.toLocaleString("en-US", { month: "short" }),
+        users,
+        trips
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: growthData
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: "Server Error" });
+  }
+};
+
+
+export const getVerificationStats = async (req, res) => {
+  try {
+    const approved = await verification.countDocuments({ status: "approved" });
+    const pending = await verification.countDocuments({ status: "pending" });
+    const rejected = await verification.countDocuments({ status: "rejected" });
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        approved,
+        pending,
+        rejected
+      }
+    });
+  } catch (error) {
+    console.error("Verification stats error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while fetching verification stats",
+      error: error.message
     });
   }
 };
