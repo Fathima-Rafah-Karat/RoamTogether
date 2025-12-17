@@ -9,6 +9,9 @@ import upload from "../middlewares/multer.middleware.js";
 import authorize  from "../middlewares/auth.middleware.js"
 const travelerRouter = Router();
 
+travelerRouter.get("/notification/notify", authorize("Traveler"), viewnotify);
+travelerRouter.get ("/notification/notify/:id",authorize("Traveler"),viewonenotify);
+travelerRouter.put("/notification/mark/:id",authorize("Traveler"),marknotification);
 
 travelerRouter.delete("/remove-trip/:tripId", authorize("Traveler"), deleteRegisteredTrip);
 
@@ -23,9 +26,7 @@ travelerRouter.post("/emergency",authorize("Traveler") , contact);
 travelerRouter.get("/viewemergency",authorize("Traveler") , viewcontact);
 travelerRouter.delete("/emergency/:id", authorize("Traveler"), deletecontact);
 
-travelerRouter.get("/notification/notify", authorize("Traveler"), viewnotify);
-travelerRouter.get ("/notification/notify/:id",authorize("Traveler"),viewonenotify);
-travelerRouter.put("/notification/mark/:id",authorize("Traveler"),marknotification);
+
 
 travelerRouter.get("/search",searchtrip)
 travelerRouter.get("/count",countTraveler)

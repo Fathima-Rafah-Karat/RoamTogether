@@ -347,25 +347,27 @@ export const viewratereview = async (req, res, next) => {
 
 export const viewnotify = async (req, res, next) => {
   try {
-    const travelerId = req.user._id;
+    const traveler = req.user._id; // auth id
 
-    const notify = await notification.find({ travelerId }).sort({ createdAt: -1 });
+    const notify = await notification
+      .find({ traveler }) // ✅ CORRECT FIELD
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
       count: notify.length,
-      data: notify
+      data: notify,
     });
-
   } catch (error) {
     next(error);
   }
 };
 
+
 export const viewonenotify = async (req, res, next) => {
   try {
-    const travelerId = req.user._id; 
-    const notifyId = req.params.id; 
+    const traveler = req.user._id;
+    const notifyId = req.params.id;
 
     const notify = await notification.findById(notifyId);
 
@@ -376,7 +378,7 @@ export const viewonenotify = async (req, res, next) => {
       });
     }
 
-    if (notify.travelerId.toString() !== travelerId.toString()) {
+    if (notify.traveler.toString() !== traveler.toString()) {
       return res.status(403).json({
         success: false,
         message: "Not authorized to view this notification",
@@ -387,11 +389,11 @@ export const viewonenotify = async (req, res, next) => {
       success: true,
       data: notify,
     });
-
   } catch (error) {
     next(error);
   }
 };
+
   
 
 export const marknotification = async (req, res, next) => {
@@ -497,8 +499,6 @@ export const mytrip = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server Error" });
   }
 };
-
-
 export const countparticipants = async (req, res) => {
   try {
     const { id: tripId } = req.params;
@@ -510,25 +510,34 @@ export const countparticipants = async (req, res) => {
       });
     }
 
-    // Find travelers who joined this trip
-    const participants = await Traveler.find({ tripsJoined: tripId })
-      .select("name email photo");
+    const participants = await Traveler.find({
+      tripsJoined: { $in: [tripId] },
+    })
+      .select("name email photo createdAt authId") // ✅ authId included
+      .sort({ createdAt: 1 });
 
-    return res.status(200).json({
+    res.status(200).json({
       success: true,
       count: participants.length,
-      data: participants,
+      data: participants.map((p) => ({
+        _id: p._id,           // traveler profile id
+        authId: p.authId,     // ✅ AUTH ID (use this for notifications)
+        name: p.name,
+        email: p.email,
+        photo: p.photo,
+        joinedAt: p.createdAt,
+      })),
     });
 
   } catch (error) {
-    console.error("Error in countparticipants:", error);
-    return res.status(500).json({
+    console.error("countparticipants error:", error);
+    res.status(500).json({
       success: false,
-      error: "Server error",
-      details: error.message,
+      message: error.message,
     });
   }
 };
+
 
 
 export const countTraveler= async (req,res,next)=>{

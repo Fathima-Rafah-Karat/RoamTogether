@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
 const notificationSchema= new mongoose.Schema({
-      travelerId: {
+      traveler: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Traveler",
+      ref: "auth",
       required: true
     },
     message: {

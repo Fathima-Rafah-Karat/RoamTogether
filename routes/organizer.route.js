@@ -4,7 +4,7 @@ import upload from "../middlewares/multer.middleware.js";
 import authorize from "../middlewares/auth.middleware.js";
 const organizerRouter =Router();
 
-organizerRouter.get("/count",counttrip);
+organizerRouter.get("/count",authorize("Organizer"),counttrip);
 
 organizerRouter.post("/createtrip",  authorize("Organizer"),upload.array("tripPhoto", 5),createTrip);
 organizerRouter.put("/trip/:id",upload.array("tripPhoto", 5),updatetrip);
