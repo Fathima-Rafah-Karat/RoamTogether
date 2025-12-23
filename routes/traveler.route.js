@@ -7,6 +7,11 @@ import { viewTrips,tripdetail,register,creatediary,
      marknotification,deleteRegisteredTrip,viewregistered} from "../controller/traveler.controller.js";
 import upload from "../middlewares/multer.middleware.js";
 import authorize  from "../middlewares/auth.middleware.js"
+import {
+  saveMessage,
+  getMessagesByTrip,
+} from "../controller/message.controller.js";
+
 const travelerRouter = Router();
 
 travelerRouter.get("/notification/notify", authorize("Traveler"), viewnotify);
@@ -26,6 +31,18 @@ travelerRouter.post("/emergency",authorize("Traveler") , contact);
 travelerRouter.get("/viewemergency",authorize("Traveler") , viewcontact);
 travelerRouter.delete("/emergency/:id", authorize("Traveler"), deletecontact);
 
+// CHAT ROUTES
+travelerRouter.post(
+  "/:tripId/message",
+  // authorize("Traveler"),
+  saveMessage
+);
+
+travelerRouter.get(
+  "/:tripId/messages",
+  // authorize("Traveler"),
+  getMessagesByTrip
+);
 
 
 travelerRouter.get("/search",searchtrip)
