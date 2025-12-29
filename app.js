@@ -11,13 +11,11 @@ import adminRouter from "./routes/admin.route.js";
 import verificationRouter from "./routes/verification.route.js";
 import connectToDatabase from "./database/mongodb.js";
 import errormiddleware from "./middlewares/error.middleware.js";
-import Message from "./model/message.model.js"; // ✅ IMPORTANT
-
+import Message from "./model/message.model.js";
+import { log } from "console";
 const app = express();
 
-/* =========================
-   MIDDLEWARE
-========================= */
+
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -30,9 +28,7 @@ app.use(
 app.use(express.json());
 app.use("/uploads", express.static("uploads"));
 
-/* =========================
-   ROUTES
-========================= */
+
 app.use("/api/auth", authRouter);
 app.use("/api/traveler", travelerRouter);
 app.use("/api/organizer", organizerRouter);
@@ -41,9 +37,7 @@ app.use("/api/verify", verificationRouter);
 
 app.use(errormiddleware);
 
-/* =========================
-   SERVER + SOCKET
-========================= */
+
 const server = http.createServer(app);
 
 const io = new Server(server, {
@@ -54,44 +48,50 @@ const io = new Server(server, {
   },
 });
 
-/* =========================
-   SOCKET LOGIC (FIXED)
-========================= */
+
 io.on("connection", (socket) => {
-  console.log("🔌 Socket connected:", socket.id);
+  console.log("Socket connected:", socket.id);
 
   socket.on("joinRoom", (tripId) => {
     socket.join(tripId);
-    console.log(`👥 Joined room: ${tripId}`);
+    console.log(`Joined room: ${tripId}`);
   });
 
-  socket.on("sendMessage", async ({ tripId, text, sender }) => {
+  socket.on("sendMessage", async ({ tripId, text, senderId, senderName }) => {
     try {
-      if (!tripId || !text) return;
+      console.log(tripId,"trip");
+      console.log(text,"text");
+      console.log(senderId,"sender");
+      console.log(senderName,"sendername");
+      
+      
+      
+      
+     
 
-      // ✅ 1. SAVE MESSAGE TO DB
       const message = await Message.create({
         tripId,
+        senderId,
         text,
-        sender,
+        senderName
       });
 
-      // ✅ 2. SEND TO ALL USERS IN ROOM
+      console.log(message,"msg");
+      
+
+      // Emit to everyone in the room
       io.to(tripId).emit("receiveMessage", message);
-    } catch (error) {
-      console.error("❌ Message error:", error.message);
+    } catch (err) {
+      console.error("Message error:", err);
     }
   });
-
   socket.on("disconnect", () => {
-    console.log("❌ Socket disconnected:", socket.id);
+    console.log(" Socket disconnected:", socket.id);
   });
 });
 
-/* =========================
-   START SERVER
-========================= */
+
 server.listen(PORT, async () => {
   await connectToDatabase();
-  console.log(`🚀 RoamTogether API running on http://localhost:${PORT}`);
+  console.log(` RoamTogether API running on http://localhost:${PORT}`);
 });

@@ -5,6 +5,8 @@ import blog from "../model/blog.model.js";
 import reviewandrate from "../model/rateandreview.model.js";
 import notification from "../model/notification.model.js";
 import Emergency from "../model/emergency.model.js";
+import Auth from "../model/auth.model.js";
+
 
 export const viewTrips = async (req, res, next) => {
     try {
@@ -20,7 +22,7 @@ export const viewTrips = async (req, res, next) => {
 }
 export const tripdetail = async (req,res,next) =>{
     try{
-      const trip= await organizer.findById(req.params.id);
+      const trip= await organizer.findById(req.params.id).lean();
       res.status(200).json({
         success:true,
         data:trip
@@ -410,13 +412,6 @@ export const marknotification = async (req, res, next) => {
       });
     }
 
-    if (notify.travelerId.toString() !== travelerId.toString()) {
-      return res.status(403).json({
-        success: false,
-        message: "Not authorized to mark this notification",
-      });
-    }
-
     if (!notify.isRead) {
       notify.isRead = true;
       await notify.save();
@@ -510,22 +505,32 @@ export const countparticipants = async (req, res) => {
       });
     }
 
-    const participants = await Traveler.find({
+    // Travelers
+    const travelers = await Traveler.find({
       tripsJoined: { $in: [tripId] },
     })
-      .select("name email photo createdAt authId") // ✅ authId included
+      .select("name email photo createdAt authId")
       .sort({ createdAt: 1 });
+
+    // Organizers
+    const organizers = await Auth.find({
+      tripsJoined: { $in: [tripId] }
+    }).select("username email createdAt _id");
+
+    // ✅ MERGE ARRAYS CORRECTLY
+    const participants = [...travelers, ...organizers];
 
     res.status(200).json({
       success: true,
       count: participants.length,
-      data: participants.map((p) => ({
-        _id: p._id,           // traveler profile id
-        authId: p.authId,     // ✅ AUTH ID (use this for notifications)
-        name: p.name,
+      data: participants.map(p => ({
+        _id: p._id,
+        authId: p.authId || p._id,   // ✅ organizer has no authId
+        name: p.name || p.username, // ✅ fallback
         email: p.email,
-        photo: p.photo,
+        photo: p.photo || null,
         joinedAt: p.createdAt,
+        role: p.role || "Traveler"
       })),
     });
 
@@ -537,6 +542,7 @@ export const countparticipants = async (req, res) => {
     });
   }
 };
+
 
 
 

@@ -3,14 +3,76 @@ import organizer from "../model/organizer.model.js";
 import Emergency from "../model/emergency.model.js";
 import Traveler from "../model/traveler.model.js";
 import reviewandrate from "../model/rateandreview.model.js";
-export const createTrip = async (req,res,next)=>{
-    try{
-        const organizerId = req.user._id;
-      const{title, description,location,startDate, endDate, participants,inclusions, price, inclusionspoint,exclusionspoint,planDetails}=req.body;
-    //   more photo upload to tripphoto
-         const tripPhoto = req.files ? req.files.map(file => file.path) : []; 
-         
-           let parsedPlanDetails = [];
+import Auth from "../model/auth.model.js";
+
+export const createTrip = async (req, res, next) => {
+  try {
+    const organizerId = req.user._id;
+
+    const {
+      title,
+      description,
+      location,
+      startDate,
+      endDate,
+      participants,
+      inclusions,
+      price,
+      inclusionspoint,
+      exclusionspoint,
+      planDetails,
+    } = req.body;
+
+    // ✅ MULTIPLE PHOTOS
+    const tripPhoto = req.files ? req.files.map((file) => file.path) : [];
+
+    // ✅ PARSE INCLUSIONS
+    let parsedInclusions = {
+      meals: false,
+      stay: false,
+      transport: false,
+      activities: false,
+    };
+
+    if (inclusions) {
+      try {
+        parsedInclusions = JSON.parse(inclusions);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid JSON format in inclusions",
+        });
+      }
+    }
+
+    // ✅ PARSE INCLUSION POINTS
+    let parsedInclusionsPoint = [];
+    if (inclusionspoint) {
+      try {
+        parsedInclusionsPoint = JSON.parse(inclusionspoint);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid JSON format in inclusionspoint",
+        });
+      }
+    }
+
+    // ✅ PARSE EXCLUSION POINTS
+    let parsedExclusionsPoint = [];
+    if (exclusionspoint) {
+      try {
+        parsedExclusionsPoint = JSON.parse(exclusionspoint);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid JSON format in exclusionspoint",
+        });
+      }
+    }
+
+    // ✅ PARSE PLAN DETAILS
+    let parsedPlanDetails = [];
     if (planDetails) {
       try {
         parsedPlanDetails = JSON.parse(planDetails);
@@ -21,28 +83,110 @@ export const createTrip = async (req,res,next)=>{
         });
       }
     }
-         
 
-        const trip=await organizer.create({ organizer: organizerId,title,description,location,startDate,endDate,participants,inclusions,tripPhoto,price,inclusionspoint,exclusionspoint,planDetails:parsedPlanDetails});
-        res.status(200).json({
-            success:true,
-            data:trip
-        })
-    }
-    catch(error){
-        next(error);
-    }
-}
+    // ✅ CREATE TRIP
+    const trip = await organizer.create({
+      organizer: organizerId,
+      title,
+      description,
+      location,
+      startDate,
+      endDate,
+      participants,
+      price,
+      inclusions: parsedInclusions,
+      inclusionspoint: parsedInclusionsPoint,
+      exclusionspoint: parsedExclusionsPoint,
+      planDetails: parsedPlanDetails,
+      tripPhoto,
+    });
 
-export const updatetrip =async(req,res,next)=>{
-    try{
-       const updatedata={...req.body};
-        if (req.files ) {
-      updatedata.tripPhoto = req.files.map(file => file.path);
-    }
-      if (updatedata.planDetails) {
+    // ✅ PUSH TRIP TO ORGANIZER
+    await Auth.findByIdAndUpdate(
+      organizerId,
+      { $push: { tripsJoined: trip._id } },
+      { new: true }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Trip created successfully",
+      data: trip,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+export const updatetrip = async (req, res, next) => {
+  try {
+    const updateData = {};
+
+    const {
+      title,
+      description,
+      location,
+      startDate,
+      endDate,
+      participants,
+      inclusions,
+      price,
+      inclusionspoint,
+      exclusionspoint,
+      planDetails,
+    } = req.body;
+
+    // ✅ BASIC FIELDS
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (location) updateData.location = location;
+    if (startDate) updateData.startDate = startDate;
+    if (endDate) updateData.endDate = endDate;
+    if (participants) updateData.participants = participants;
+    if (price) updateData.price = price;
+
+    // ✅ PARSE INCLUSIONS
+    if (inclusions) {
       try {
-        updatedata.planDetails = JSON.parse(updatedata.planDetails);
+        updateData.inclusions = JSON.parse(inclusions);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid JSON format in inclusions",
+        });
+      }
+    }
+
+    // ✅ PARSE INCLUSION POINTS
+    if (inclusionspoint) {
+      try {
+        updateData.inclusionspoint = JSON.parse(inclusionspoint);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid JSON format in inclusionspoint",
+        });
+      }
+    }
+
+    // ✅ PARSE EXCLUSION POINTS
+    if (exclusionspoint) {
+      try {
+        updateData.exclusionspoint = JSON.parse(exclusionspoint);
+      } catch (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid JSON format in exclusionspoint",
+        });
+      }
+    }
+
+    // ✅ PARSE PLAN DETAILS
+    if (planDetails) {
+      try {
+        updateData.planDetails = JSON.parse(planDetails);
       } catch (error) {
         return res.status(400).json({
           success: false,
@@ -50,9 +194,21 @@ export const updatetrip =async(req,res,next)=>{
         });
       }
     }
-        const update = await organizer.findByIdAndUpdate(req.params.id, updatedata, { new: true });
 
-    if (!update) {
+    // ✅ HANDLE PHOTOS (MERGE NEW PHOTOS)
+    if (req.files && req.files.length > 0) {
+      const newPhotos = req.files.map((file) => file.path);
+      updateData.$push = { tripPhoto: { $each: newPhotos } };
+    }
+
+    // ✅ UPDATE TRIP
+    const updatedTrip = await organizer.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedTrip) {
       return res.status(404).json({
         success: false,
         message: "Trip not found",
@@ -61,13 +217,14 @@ export const updatetrip =async(req,res,next)=>{
 
     res.status(200).json({
       success: true,
-      data: update
+      message: "Trip updated successfully",
+      data: updatedTrip,
     });
-    }
-    catch(error){
-        next(error);
-    }
-}
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const deletetrip =async(req,res,next) =>{
     try{
         const deleted= await organizer.findByIdAndDelete(req.params.id);

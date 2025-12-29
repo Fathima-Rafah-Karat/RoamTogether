@@ -32,7 +32,13 @@ const authSchema=new mongoose.Schema({
         type:String,
         required:[true,"select your role is required"],
         enum:["Traveler","Organizer","Admin"]
-    }
+    },
+     tripsJoined: [
+             {
+               type: mongoose.Schema.Types.ObjectId,
+               ref: "organizer", 
+             },
+           ],
 },{timestamps:true});
 const Auth =mongoose.model("auth",authSchema);
 export default Auth;

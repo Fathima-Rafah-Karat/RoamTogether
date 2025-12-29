@@ -16,6 +16,7 @@ const organizerSchema = new mongoose.Schema({
       minlength:3,
       maxlength:50
     },
+   
     description:{
         type:String,
         required:[true,"description is required"],
@@ -83,5 +84,6 @@ const organizerSchema = new mongoose.Schema({
    
 
 },{timestamps:true});
+
 const organizer= mongoose.model("organizer",organizerSchema);
 export default organizer;

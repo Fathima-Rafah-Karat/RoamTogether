@@ -7,10 +7,16 @@ const messageSchema = new mongoose.Schema(
       required: true,
       ref: "Organizer",
     },
-    // sender: {
-    //   type: String, // later you can change to ObjectId (User)
-    //   required: true,
-    // },
+ senderId: { 
+  type: mongoose.Schema.Types.ObjectId, 
+  ref: "traveler",
+   required: true 
+  },
+   
+  senderName: { 
+    type: String, 
+    required: true 
+  },
     text: {
       type: String,
       required: true,
