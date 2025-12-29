@@ -239,7 +239,7 @@ export const viewall = async (req, res, next) => {
 
 export const deletediary = async (req, res, next) => {
   try {
-    const diary = await Diary.findOneAndDelete({ _id: req.params.id, traveler: req.traveler._id });
+    const diary = await Diary.findOneAndDelete({ _id: req.params.id});
     if (!diary) {
       return res.status(404).json({ success: false, message: "Diary not found or unauthorized" });
     }
@@ -252,7 +252,7 @@ export const deletediary = async (req, res, next) => {
 export const editdiary = async (req, res, next) => {
   try {
     const diary = await Diary.findOneAndUpdate(
-      { _id: req.params.id, traveler: req.traveler._id },
+      { _id: req.params.id, traveler: req.user._id },
       req.body,
       { new: true }
     );
