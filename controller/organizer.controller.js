@@ -119,11 +119,8 @@ export const createTrip = async (req, res, next) => {
 };
 
 
-
-export const updatetrip = async (req, res, next) => {
+export const updatetrip = async (req, res) => {
   try {
-    const updateData = {};
-
     const {
       title,
       description,
@@ -131,14 +128,17 @@ export const updatetrip = async (req, res, next) => {
       startDate,
       endDate,
       participants,
-      inclusions,
       price,
+      inclusions,
       inclusionspoint,
       exclusionspoint,
       planDetails,
+      existingPhotos, // ✅ IMPORTANT
     } = req.body;
 
-    // ✅ BASIC FIELDS
+    const updateData = {};
+
+    // BASIC FIELDS
     if (title) updateData.title = title;
     if (description) updateData.description = description;
     if (location) updateData.location = location;
@@ -147,64 +147,35 @@ export const updatetrip = async (req, res, next) => {
     if (participants) updateData.participants = participants;
     if (price) updateData.price = price;
 
-    // ✅ PARSE INCLUSIONS
-    if (inclusions) {
-      try {
-        updateData.inclusions = JSON.parse(inclusions);
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid JSON format in inclusions",
-        });
-      }
+    // PARSE JSON SAFELY
+    if (inclusions) updateData.inclusions = JSON.parse(inclusions);
+    if (inclusionspoint)
+      updateData.inclusionspoint = JSON.parse(inclusionspoint);
+    if (exclusionspoint)
+      updateData.exclusionspoint = JSON.parse(exclusionspoint);
+    if (planDetails)
+      updateData.planDetails = JSON.parse(planDetails);
+
+    // ✅ HANDLE TRIP PHOTOS (REPLACE, NOT PUSH)
+    let finalPhotos = [];
+
+    // 1️⃣ keep existing photos user didn’t delete
+    if (existingPhotos) {
+      finalPhotos = JSON.parse(existingPhotos);
     }
 
-    // ✅ PARSE INCLUSION POINTS
-    if (inclusionspoint) {
-      try {
-        updateData.inclusionspoint = JSON.parse(inclusionspoint);
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid JSON format in inclusionspoint",
-        });
-      }
-    }
-
-    // ✅ PARSE EXCLUSION POINTS
-    if (exclusionspoint) {
-      try {
-        updateData.exclusionspoint = JSON.parse(exclusionspoint);
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid JSON format in exclusionspoint",
-        });
-      }
-    }
-
-    // ✅ PARSE PLAN DETAILS
-    if (planDetails) {
-      try {
-        updateData.planDetails = JSON.parse(planDetails);
-      } catch (error) {
-        return res.status(400).json({
-          success: false,
-          message: "Invalid JSON format in planDetails",
-        });
-      }
-    }
-
-    // ✅ HANDLE PHOTOS (MERGE NEW PHOTOS)
+    // 2️⃣ add newly uploaded photos
     if (req.files && req.files.length > 0) {
-      const newPhotos = req.files.map((file) => file.path);
-      updateData.$push = { tripPhoto: { $each: newPhotos } };
+      const uploadedPhotos = req.files.map((file) => file.path);
+      finalPhotos = [...finalPhotos, ...uploadedPhotos];
     }
 
-    // ✅ UPDATE TRIP
+    // 3️⃣ replace photo array
+    updateData.tripPhoto = finalPhotos;
+
     const updatedTrip = await organizer.findByIdAndUpdate(
       req.params.id,
-      updateData,
+      { $set: updateData },
       { new: true }
     );
 
@@ -221,9 +192,14 @@ export const updatetrip = async (req, res, next) => {
       data: updatedTrip,
     });
   } catch (error) {
-    next(error);
+    console.error("Update Trip Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update trip",
+    });
   }
 };
+
 
 export const deletetrip =async(req,res,next) =>{
     try{
