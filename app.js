@@ -1,18 +1,20 @@
+import { PORT } from "./config/env.js";
+import connectToDatabase from "./database/mongodb.js";
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 
-import { PORT } from "./config/env.js";
+// import { PORT } from "./config/env.js";
 import authRouter from "./routes/auth.route.js";
 import travelerRouter from "./routes/traveler.route.js";
 import organizerRouter from "./routes/organizer.route.js";
 import adminRouter from "./routes/admin.route.js";
 import verificationRouter from "./routes/verification.route.js";
-import connectToDatabase from "./database/mongodb.js";
+// import connectToDatabase from "./database/mongodb.js";
 import errormiddleware from "./middlewares/error.middleware.js";
 import Message from "./model/message.model.js";
-import { log } from "console";
+
 const app = express();
 
 
