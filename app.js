@@ -101,12 +101,14 @@
 
 
 
-import { PORT } from "./config/env.js";
-import connectToDatabase from "./database/mongodb.js";
+
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
+
+import { PORT } from "./config/env.js";
+import connectToDatabase from "./database/mongodb.js";
 
 import authRouter from "./routes/auth.route.js";
 import travelerRouter from "./routes/traveler.route.js";
