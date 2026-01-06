@@ -17,21 +17,15 @@
 //     export default connectToDatabase;
 
 
-
 import mongoose from "mongoose";
 import { DB_URI, NODE_ENV } from "../config/env.js";
 
 const connectToDatabase = async () => {
-  if (!DB_URI) {
-    console.error("❌ MONGODB_URI is not defined. Please set it in your environment variables.");
-    process.exit(1);
-  }
-
   try {
     await mongoose.connect(DB_URI);
     console.log(`✅ Connected to DB in ${NODE_ENV} mode`);
   } catch (error) {
-    console.error("❌ Error connecting to DB:", error.message);
+    console.error("Error connecting to DB:", error.message);
     process.exit(1);
   }
 };
