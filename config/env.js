@@ -1,13 +1,35 @@
-import { config } from "dotenv";
-config({path:`.env.${process.env.NODE_ENV  || 'development'}.local`});
+// import { config } from "dotenv";
+// config({path:`.env.${process.env.NODE_ENV  || 'development'}.local`});
+
+// export const {
+//     PORT,
+//     NODE_ENV,
+//     DB_URI,
+//     JWT_SECRET,
+//     JWT_EXPIRES_IN
+// }=process.env;
+
+
+
+// config/env.js
+import dotenv from "dotenv";
+
+// Load env variables (Railway + local both supported)
+dotenv.config();
 
 export const {
-    PORT,
-    NODE_ENV,
-    DB_URI,
-    JWT_SECRET,
-    JWT_EXPIRES_IN
-}=process.env;
+  PORT,
+  NODE_ENV,
+  DB_URI,
+  JWT_SECRET,
+  JWT_EXPIRES_IN
+} = process.env;
+
+// Optional safety check (recommended)
+if (!DB_URI) {
+  console.error("❌ DB_URI is not defined");
+}
+
 
 // import { config } from "dotenv";
 
