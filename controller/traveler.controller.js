@@ -546,18 +546,24 @@ export const countparticipants = async (req, res) => {
 
 
 
-export const countTraveler= async (req,res,next)=>{
-  try{
-   const counts=await Traveler.countDocuments();
-   res.status(200).json({
-    success:true,
-    data:counts
-   })
+export const countTraveler = async (req, res) => {
+  try {
+    const count = await Traveler.countDocuments();
+
+    return res.status(200).json({
+      success: true,
+      data: count
+    });
+  } catch (error) {
+    console.error("Count traveler error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch traveler count"
+    });
   }
-  catch(error){
-    next(error);
-  }
-}
+};
+
 
 export const contact = async (req, res, next) => {
   try {
